@@ -94,7 +94,7 @@ class Writer():
     def height(self):  # Property for consistency with device
         return self.font.height()
 
-    def printstring(self, string, invert=False):
+    def printstring(self, string, invert=True):
         # word wrapping. Assumes words separated by single space.
         q = string.split('\n')
         last = len(q) - 1

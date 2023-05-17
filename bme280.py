@@ -1,3 +1,4 @@
+import machine
 import struct
 from time import sleep_ms
 
@@ -22,43 +23,46 @@ _BME280_REGISTER_TEMPDATA = const(0xFA)
 _BME280_REGISTER_HUMIDDATA = const(0xFD)
 
 class BME280:
-    def __init__(self, spi, cs):
-        self._spi = spi
-        self._cs = cs
+    def __init__(self, spi_id, cs_pin):
+        self._spi = machine.SPI(spi_id, 100_000)
+        self._cs = machine.Pin(cs_pin, machine.Pin.OUT)
         # Set some reasonable defaults.
         self._iir_filter = IIR_FILTER_DISABLE
-        self.overscan_humidity = OVERSCAN_X1
-        self.overscan_temperature = OVERSCAN_X1
-        self.overscan_pressure = OVERSCAN_X16
         self._t_standby = 0x02  # 125ms
         self._mode = MODE_SLEEP
+        self.overscan_humidity = OVERSCAN_X16
+        self.overscan_temperature = OVERSCAN_X1
+        self.overscan_pressure = OVERSCAN_X16
+        self.sea_level_pressure = 1013.25  # pressure in hectoPascals at sea level
+
         self.reset()
+
+        chip_id = self.chip_id()
+        if chip_id != _BME280_CHIPID:
+            raise RuntimeError("Failed to find BME280: chip_id 0x%x" % chip_id)
+
         self._read_coefficients()
         self._write_ctrl_meas()
         self._write_config()
-        self._t_fine = None
-        self.sea_level_pressure = 1013.25  # pressure in hectoPascals at sea level
-
-        self._cs.off()
-        chip_id = self._read_register(_BME280_REGISTER_CHIPID, 1)[0]
-        if chip_id != _BME280_CHIPID:
-            raise RuntimeError("Failed to find BME280: chip_id 0x%x" % chip_id)
-        self._cs.on()
 
     def _read_register(self, register: int, length: int) -> bytearray:
         register = (register | 0x80) & 0xFF  # bit 7 high
+        self._cs(0)
         self._spi.write(bytearray([register]))
         result = bytearray(length)
         self._spi.readinto(result)
+        self._cs(1)
+        print("\t$%02X <= %s" % (register, [hex(i) for i in result]))
         return result
 
     def _write_register_byte(self, register: int, value: int):
         register &= 0x7F  # bit 7 low
+        self._cs(0)
         self._spi.write(bytes([register, value & 0xFF]))
+        self._cs(1)
 
     def _read_coefficients(self) -> None:
         """Read & save the calibration coefficients"""
-        self._cs.off()
         coeff = self._read_register(0x88, 24)  # BME280_REGISTER_DIG_T1
         coeff = list(struct.unpack("<HhhHhhhhhhhh", bytes(coeff)))
         coeff = [float(i) for i in coeff]
@@ -68,7 +72,6 @@ class BME280:
         self._humidity_calib = [0] * 6
         self._humidity_calib[0] = self._read_register(0xA1, 1)[0]  # BME280_REGISTER_DIG_H1
         coeff = self._read_register(0xE1, 7)  # BME280_REGISTER_DIG_H2
-        self._cs.on()
         coeff = list(struct.unpack("<hBbBbb", bytes(coeff)))
         self._humidity_calib[1] = float(coeff[0])
         self._humidity_calib[2] = float(coeff[1])
@@ -82,10 +85,8 @@ class BME280:
         ctrl_meas sets the pressure and temperature data acquisition options
         ctrl_hum sets the humidity oversampling and must be written to first
         """
-        self._cs.off()
         self._write_register_byte(_BME280_REGISTER_CTRL_HUM, self.overscan_humidity)
         self._write_register_byte(_BME280_REGISTER_CTRL_MEAS, self._ctrl_meas)
-        self._cs.on()
 
     def _write_config(self) -> None:
         normal_flag = False
@@ -93,9 +94,7 @@ class BME280:
             # Writes to the config register might be ignored while in Normal mode
             normal_flag = True
             self.mode = MODE_SLEEP
-        self._cs.off()
         self._write_register_byte(_BME280_REGISTER_CONFIG, self._config)
-        self._cs.on()
         if normal_flag:
             self.mode = MODE_NORMAL
 
@@ -175,14 +174,14 @@ class BME280:
 
 
     def chip_id(self):
-        return self._read(_BME280_REGISTER_CHIPID, 1)[0]
+        id = self._read_register(_BME280_REGISTER_CHIPID, 1)[0]
+        return id
 
     def reset(self) -> None:
         self._write_register_byte(_BME280_REGISTER_SOFTRESET, 0xB6)
         sleep_ms(4)
 
     def read(self):
-        self._cs.off()
         if self.mode != MODE_NORMAL:
             self.mode = MODE_FORCE
             while self._read_register(_BME280_REGISTER_STATUS, 1)[0] & 0x08:
@@ -199,6 +198,5 @@ class BME280:
         temperature, t_fine = self._compensate_temperature(temp_raw)
         pressure = self._compensate_pressure(pressure_raw, t_fine)
         humidity = self._compensate_humidity(humid_raw, t_fine)
-        self._cs.on()
         return (pressure, temperature, humidity)
 

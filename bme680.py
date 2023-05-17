@@ -226,7 +226,7 @@ class BME680:
         elif humidity > 42:
             humidity_score = ((-0.25 / (100 - _IAQ_HUMIDITY_REFERENCE) * humidity) + 0.416666) * 100.0
 
-        return gas_score + humidity_score
+        return (100.0 - gas_score + humidity_score) * 5.0
 
     def _perform_reading(self) -> None:
         """Perform a single-shot reading from the sensor and fill internal data structure for

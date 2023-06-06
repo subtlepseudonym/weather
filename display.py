@@ -64,12 +64,18 @@ class Display():
     def _write_gas(self, gas):
         self._write_text(f'{gas: >6.0f}ohm', 143, 98, COLOR_BLACK)
 
+    def _write_iaq(self, iaq):
+        if iaq < 200:
+            self._write_text(f'{iaq: >6.0f}', 143, 98, COLOR_BLACK)
+        else:
+            self._write_text(f'{iaq: >6.0f}', 143, 98, COLOR_RED)
+
     def clear(self):
         self._fb_black.fill(COLOR_WHITE)
         self._fb_red.fill(COLOR_WHITE)
         self.draw_buffer()
 
-    def update_values(self, pressure, humidity, temperature, gas):
+    def update_values(self, pressure, humidity, temperature, gas, iaq):
         self._fb_black.fill(COLOR_WHITE)
         self._fb_red.fill(COLOR_WHITE)
         self._write_labels()

@@ -72,8 +72,8 @@ def update_metrics():
 
     temperature_gauge.labels('dht22').set(m.dht_temperature)
     temperature_gauge.labels('bme680').set(m.bme_temperature)
-    humidity_gauge.labels('dht22').set(m.dht_humidity)
-    humidity_gauge.labels('bme680').set(m.bme_humidity)
+    humidity_gauge.labels('dht22').set(m.dht_humidity / 100.0)
+    humidity_gauge.labels('bme680').set(m.bme_humidity / 100.0)
     pressure_gauge.labels('bme680').set(m.pressure)
     gas_resistance_gauge.labels('bme680').set(m.gas_resistance)
 

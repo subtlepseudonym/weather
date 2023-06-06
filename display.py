@@ -12,8 +12,9 @@ COLOR_WHITE = const(1)
 COLOR_RED = const(2)
 
 class Display():
-    def __init__(self, spi_id, cs_pin, dc_pin, rst_pin, busy_pin):
+    def __init__(self, spi_id, pwr_pin, cs_pin, dc_pin, rst_pin, busy_pin):
         # set up gpio pins
+        self._pwr = machine.Pin(pwr_pin, machine.Pin.OUT, machine.Pin.PULL_DOWN)
         self._cs = machine.Pin(cs_pin, machine.Pin.OUT)
         self._dc = machine.Pin(dc_pin, machine.Pin.OUT)
         self._rst = machine.Pin(rst_pin, machine.Pin.OUT)
@@ -32,7 +33,7 @@ class Display():
         self._writer_red.set_textpos(self._fb_red, 0, 0)
         # set up epaper device
         spi = machine.SPI(spi_id, 20_000_000)
-        self._epaper = epaper2in9b.EPD(spi, self._cs, self._dc, self._rst, self._busy)
+        self._epaper = epaper2in9b.EPD(spi, self._pwr, self._cs, self._dc, self._rst, self._busy)
         self._epaper.set_rotate(epaper2in9b.ROTATE_270)
         self._epaper.init()
 

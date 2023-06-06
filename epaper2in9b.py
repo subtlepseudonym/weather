@@ -67,8 +67,9 @@ class TextDisplay(framebuf.FrameBuffer):
 
 
 class EPD:
-    def __init__(self, spi, cs, dc, rst, busy):
+    def __init__(self, spi, pwr, cs, dc, rst, busy):
         self.spi = spi
+        self.pwr = pwr
         self.cs = cs
         self.dc = dc
         self.rst = rst
@@ -96,6 +97,7 @@ class EPD:
         self.cs.on()
 
     def init(self):
+        self.pwr.on()
         self.reset()
         self._command(BOOSTER_SOFT_START, b'\x17\x17\x17')
         self._command(POWER_ON)
@@ -106,10 +108,14 @@ class EPD:
         self._command(VCM_DC_SETTING_REGISTER, b'\x0A')
 
     def wait_until_idle(self):
-        while self.busy() == BUSY:
+        retries=0
+        while self.busy.value() == BUSY and retries < 200:
+            retries += 1
             sleep_ms(100)
+        print(f"epaper wait time: {0.1*retries}s")
 
     def reset(self):
+        self.pwr.on()
         self.rst.on()
         sleep_ms(200)
         self.rst.off()
@@ -124,6 +130,8 @@ class EPD:
         self._command(POWER_SETTING, b'\x02\x00\x00\x00') # gate switch to external
         self.wait_until_idle()
         self._command(POWER_OFF)
+        sleep_ms(2000)
+        self.pwr.off()
 
     def display_frame(self, frame_buffer_black, frame_buffer_red):
         if (frame_buffer_black != None):

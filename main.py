@@ -1,8 +1,8 @@
 import dht, machine
 import bme680, display
 
+screen = display.Display(1, 26, 15, 2, 4, 12)
 d = dht.DHT22(machine.Pin(27))
-screen = display.Display(1, 15, 2, 4, 12)
 bme = bme680.BME680(2, 5)
 
 def update():
@@ -28,4 +28,4 @@ def update():
 
 update()
 t0 = machine.Timer(0)
-t0.init(period=120000, mode=machine.Timer.PERIODIC, callback=lambda t:update())
+t0.init(period=300000, mode=machine.Timer.PERIODIC, callback=lambda t:update())

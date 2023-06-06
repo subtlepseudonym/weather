@@ -5,7 +5,7 @@ import time
 _BME680_CHIPID = const(0x61)
 
 _BME680_REG_CHIPID = const(0xD0)
-_BME68X_REG_VARIANT = const(0xF0)
+_BME680_REG_VARIANT = const(0xF0)
 _BME680_BME680_COEFF_ADDR1 = const(0x89)
 _BME680_BME680_COEFF_ADDR2 = const(0xE1)
 _BME680_BME680_RES_HEAT_0 = const(0x5A)
@@ -31,9 +31,10 @@ _BME680_RUNGAS = const(0x10)
 
 _IAQ_GAS_REFERENCE = const(2500.0)
 _IAQ_HUMIDITY_REFERENCE = const(40.0)
-_IAQ_GAS_LOWER_LIMIT = const(10000.0)
-_IAQ_GAS_UPPER_LIMIT = const(300000.0)
-_IAQ_GAS_RANGE = const(290000.0)
+#_IAQ_GAS_LOWER_LIMIT = const(10000.0)
+#_IAQ_GAS_UPPER_LIMIT = const(300000.0)
+_IAQ_GAS_LOWER_LIMIT = const(2000.0)
+_IAQ_GAS_UPPER_LIMIT = const(50000.0)
 
 # lookup tables for gas resistance calculation
 _LOOKUP_TABLE_1 = (
@@ -106,13 +107,13 @@ class BME680:
             raise RuntimeError("Failed to find BME680! Chip ID 0x%x" % chip_id)
 
         # Get variant
-        self._chip_variant = self._read_byte(_BME68X_REG_VARIANT)
+        self._chip_variant = self._read_byte(_BME680_REG_VARIANT)
 
         self._read_calibration()
 
-        # set up heater
-        self._write(_BME680_BME680_RES_HEAT_0, [0x73])
-        self._write(_BME680_BME680_GAS_WAIT_0, [0x65])
+        # set up gas heater
+        self._write(_BME680_BME680_RES_HEAT_0, [0x73])  # 320 degrees C
+        self._write(_BME680_BME680_GAS_WAIT_0, [0x65])  # 148ms
 
     @property
     def temperature(self) -> float:
@@ -208,12 +209,12 @@ class BME680:
 
     @property
     def indoor_air_quality(self) -> float:
-        readings = 10
+        readings = 5
         for i in range(readings):
             self._gas_reference += self.gas_resistance
             time.sleep_ms(self._min_refresh_time+2)
         self._gas_reference /= readings
-        gas_score = ((0.75 / _IAQ_GAS_RANGE * self._gas_reference) - (_IAQ_GAS_LOWER_LIMIT * (0.75 / _IAQ_GAS_RANGE))) * 100.0
+        gas_score = ((0.75 / (_IAQ_GAS_UPPER_LIMIT - _IAQ_GAS_LOWER_LIMIT) * self._gas_reference) - (_IAQ_GAS_LOWER_LIMIT * (0.75 / (_IAQ_GAS_UPPER_LIMIT - _IAQ_GAS_LOWER_LIMIT)))) * 100.0
         if gas_score > 75:
             gas_score = 75
         elif gas_score < 0:

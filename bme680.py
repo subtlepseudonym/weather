@@ -33,8 +33,8 @@ _IAQ_GAS_REFERENCE = const(2500.0)
 _IAQ_HUMIDITY_REFERENCE = const(40.0)
 #_IAQ_GAS_LOWER_LIMIT = const(10000.0)
 #_IAQ_GAS_UPPER_LIMIT = const(300000.0)
-_IAQ_GAS_LOWER_LIMIT = const(2000.0)
-_IAQ_GAS_UPPER_LIMIT = const(50000.0)
+_IAQ_GAS_LOWER_LIMIT = const(4000.0)
+_IAQ_GAS_UPPER_LIMIT = const(100000.0)
 
 # lookup tables for gas resistance calculation
 _LOOKUP_TABLE_1 = (

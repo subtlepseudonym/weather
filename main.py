@@ -1,4 +1,4 @@
-import dht, machine, network, socket
+import dht, machine, network, socket, _thread
 import bme680, display
 import prometheus_express as prometheus
 
@@ -108,6 +108,19 @@ except OSError as err:
         print('resetting device...')
         machine.reset()
 
+def accept_connections():
+    while True:
+        try:
+            server.accept(router)
+        except OSError as err:
+            if err.errno == 116:  # ETIMEDOUT
+                continue
+            print('error accepting request: {}'.format(err))
+        except ValueError as err:
+            print('error parsing request: {}'.format(err))
+
+_thread.start_new_thread(accept_connections, ())
+
 # update screen every 5m
 update_screen()
 t0 = machine.Timer(0)
@@ -117,13 +130,3 @@ t0.init(period=300000, mode=machine.Timer.PERIODIC, callback=lambda t:update_scr
 update_metrics()
 t1 = machine.Timer(1)
 t1.init(period=30000, mode=machine.Timer.PERIODIC, callback=lambda t:update_metrics())
-
-while True:
-    try:
-        server.accept(router)
-    except OSError as err:
-        if err.errno == 116:  # ETIMEDOUT
-            continue
-        print('error accepting request: {}'.format(err))
-    except ValueError as err:
-        print('error parsing request: {}'.format(err))

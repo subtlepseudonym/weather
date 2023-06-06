@@ -6,32 +6,37 @@ screen = display.Display(1, 26, 15, 2, 4, 12)
 d = dht.DHT22(machine.Pin(27))
 bme = bme680.BME680(2, 5)
 
+registry = prometheus.CollectorRegistry(namespace='weather')
 temperature_gauge = prometheus.Gauge(
     name='temperature_celsius',
     desc='temperature sensor output',
     labels=['sensor'],
+    registry=registry,
 )
 humidity_gauge = prometheus.Gauge(
     name='humidity_ratio',
     desc='humidity sensor output',
     labels=['sensor'],
+    registry=registry,
 )
 pressure_gauge = prometheus.Gauge(
     name='pressure_hectopascals',
     desc='atmospheric pressure sensor output',
     labels=['sensor'],
+    registry=registry,
 )
 gas_resistance_gauge = prometheus.Gauge(
     name='gas_resistance_ohms',
     desc='metal-oxide gas sensor resistance value',
     labels=['sensor'],
+    registry=registry,
 )
-
-registry = prometheus.CollectorRegistry(namespace='weather')
-registry.register(temperature_gauge.labels('dht22', 'bme680'))
-registry.register(humidity_gauge.labels('dht22', 'bme680'))
-registry.register(pressure_gauge.labels('bme680'))
-registry.register(gas_resistance_gauge.labels('bme680'))
+indoor_air_quality_gauge = prometheus.Gauge(
+    name='indoor_air_quality_score',
+    desc='score for indoor air quality ranging from 0-500',
+    labels=['sensor'],
+    registry=registry,
+)
 
 def measure():
     d.measure()
@@ -76,6 +81,7 @@ def update_metrics():
     humidity_gauge.labels('bme680').set(m.bme_humidity / 100.0)
     pressure_gauge.labels('bme680').set(m.pressure)
     gas_resistance_gauge.labels('bme680').set(m.gas_resistance)
+    indoor_air_quality_gauge.labels('bme680').set(m.indoor_air_quality)
 
 def update_screen():
     m = measure()

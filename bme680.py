@@ -207,6 +207,11 @@ class BME680:
             calc_gas_res = (var3 + (var2 / 2)) / var2
         return int(calc_gas_res)
 
+    def burn_in(self, count=10) -> None:
+        for i in range(count):
+            time.sleep_ms(self._min_refresh_time+2)
+            self._perform_reading()
+
     @property
     def indoor_air_quality(self) -> float:
         readings = 5

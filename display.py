@@ -76,7 +76,7 @@ class Display():
         self._fb_red.fill(COLOR_WHITE)
         self.draw_buffer()
 
-    def update_values(self, iaq, temperature, humidity, gas, pressure):
+    def _update_values(self, iaq=None, temperature=None, humidity=None, gas=None, pressure=None):
         self._fb_black.fill(COLOR_WHITE)
         self._fb_red.fill(COLOR_WHITE)
         self._write_labels()
@@ -91,6 +91,18 @@ class Display():
             self._write_gas(gas)
         if pressure is not None:
             self._write_pressure(pressure)
+
+    def update(self, m):
+        self._update_values(
+            iaq=m.indoor_air_quality,
+            temperature=m.temperature,
+            humidity=m.humidity,
+            gas=m.gas_resistance,
+            pressure=m.pressure,
+        )
+        self.wake()
+        self.draw_buffer()
+        self.sleep()
 
     def draw_buffer(self):
         self._epaper.display_frame(self._buf_black, self._buf_red)

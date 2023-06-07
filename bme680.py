@@ -33,8 +33,8 @@ _IAQ_GAS_REFERENCE = const(2500.0)
 _IAQ_HUMIDITY_REFERENCE = const(40.0)
 #_IAQ_GAS_LOWER_LIMIT = const(10000.0)
 #_IAQ_GAS_UPPER_LIMIT = const(300000.0)
-_IAQ_GAS_LOWER_LIMIT = const(4000.0)
-_IAQ_GAS_UPPER_LIMIT = const(100000.0)
+_IAQ_GAS_LOWER_LIMIT = const(2000.0)
+_IAQ_GAS_UPPER_LIMIT = const(50000.0)
 
 # lookup tables for gas resistance calculation
 _LOOKUP_TABLE_1 = (
@@ -102,12 +102,12 @@ class BME680:
         time.sleep_ms(10)
 
         # Check device ID.
-        chip_id = self._read_byte(_BME680_REG_CHIPID)
+        chip_id = self._read(_BME680_REG_CHIPID, 1)[0]
         if chip_id != _BME680_CHIPID:
             raise RuntimeError("Failed to find BME680! Chip ID 0x%x" % chip_id)
 
         # Get variant
-        self._chip_variant = self._read_byte(_BME680_REG_VARIANT)
+        self._chip_variant = self._read(_BME680_REG_VARIANT, 1)[0]
 
         self._read_calibration()
 
@@ -255,7 +255,7 @@ class BME680:
             self._write(_BME680_REG_CTRL_GAS, [_BME680_RUNGAS << 1])
         else:
             self._write(_BME680_REG_CTRL_GAS, [_BME680_RUNGAS])
-        ctrl = self._read_byte(_BME680_REG_CTRL_MEAS)
+        ctrl = self._read(_BME680_REG_CTRL_MEAS, 1)[0]
         ctrl = (ctrl & 0xFC) | 0x01  # enable single shot!
         self._write(_BME680_REG_CTRL_MEAS, [ctrl])
         new_data = False
@@ -301,13 +301,9 @@ class BME680:
         self._humidity_calibration[1] += self._humidity_calibration[0] % 16
         self._humidity_calibration[0] /= 16
 
-        self._heat_range = (self._read_byte(0x02) & 0x30) / 16
-        self._heat_val = self._read_byte(0x00)
-        self._sw_err = (self._read_byte(0x04) & 0xF0) / 16
-
-    def _read_byte(self, register: int) -> int:
-        """Read a byte register value and return it"""
-        return self._read(register, 1)[0]
+        self._heat_range = (self._read(0x02, 1)[0] & 0x30) / 16
+        self._heat_val = self._read(0x00, 1)[0]
+        self._sw_err = (self._read(0x04, 1)[0] & 0xF0) / 16
 
     def _read(self, register: int, length: int) -> bytearray:
         if register != _BME680_REG_STATUS:

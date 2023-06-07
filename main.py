@@ -80,19 +80,19 @@ def update_metrics():
     humidity_gauge.labels('dht22').set(m.dht_humidity / 100.0)
     humidity_gauge.labels('bme680').set(m.bme_humidity / 100.0)
     pressure_gauge.labels('bme680').set(m.pressure)
-    gas_resistance_gauge.labels('bme680').set(m.gas_resistance)
     indoor_air_quality_gauge.labels('bme680').set(m.indoor_air_quality)
+    gas_resistance_gauge.labels('bme680').set(m.gas_resistance)
 
 def update_screen():
     m = measure()
     print_measurements(m)
 
     screen.update_values(
-        pressure=m.pressure,
-        humidity=m.humidity,
+        iaq=m.indoor_air_quality,
         temperature=m.temperature,
+        humidity=m.humidity,
         gas=m.gas_resistance,
-        iaq=m.indoor_air_quality
+        pressure=m.pressure,
     )
     screen.wake()
     screen.draw_buffer()

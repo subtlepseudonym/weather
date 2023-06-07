@@ -46,48 +46,51 @@ class Display():
             self._writer_red.printstring(text)
 
     def _write_labels(self):
-        self._write_text('pressure', 0, 0, COLOR_BLACK)
-        self._write_text('humidity', 0, 68, COLOR_BLACK)
-        self._write_text('   temp', 143, 0, COLOR_BLACK)
-        self._write_text('   gas', 143, 68, COLOR_BLACK)
-
-    def _write_pressure(self, pressure):
-        self._write_text(f'{pressure: >5.0f}hPa', 0, 30, COLOR_BLACK)
-
-    def _write_humidity(self, humidity):
-        self._write_text(f'{humidity: >5.1f}%', 0, 98, COLOR_BLACK)
-
-    def _write_temperature(self, temperature):
-        temp_f = int(temperature * 9 / 5 + 32)
-        self._write_text(f'{temperature: >3.0f}C/{temp_f:.0f}F', 143, 30, COLOR_BLACK)
-
-    def _write_gas(self, gas):
-        self._write_text(f'{gas: >6.0f}ohm', 143, 98, COLOR_BLACK)
+        self._write_text('    Air Quality', 0, 0, COLOR_BLACK)
+        self._write_text(' Temperature', 0, 31, COLOR_BLACK)
+        self._write_text('Humidity', 188, 31, COLOR_BLACK)
+        self._write_text('Gas Resistance', 0, 78, COLOR_BLACK)
+        self._write_text('Pressure', 188, 78, COLOR_BLACK)
 
     def _write_iaq(self, iaq):
         if iaq < 200:
-            self._write_text(f'{iaq: >6.0f}', 143, 98, COLOR_BLACK)
+            self._write_text(f'{iaq: >3.0f}', 204, 0, COLOR_BLACK)
         else:
-            self._write_text(f'{iaq: >6.0f}', 143, 98, COLOR_RED)
+            self._write_text(f'{iaq: >3.0f}', 204, 0, COLOR_RED)
+
+    def _write_temperature(self, temperature):
+        temp_f = int(temperature * 9 / 5 + 32)
+        self._write_text(f'{temperature: >5.0f}C/{temp_f:.0f}F', 0, 52, COLOR_BLACK)
+
+    def _write_humidity(self, humidity):
+        self._write_text(f'{humidity: >5.1f}%', 188, 52, COLOR_BLACK)
+
+    def _write_gas(self, gas):
+        self._write_text(f'{gas: >8.0f}ohm', 0, 99, COLOR_BLACK)
+
+    def _write_pressure(self, pressure):
+        self._write_text(f'{pressure: >5.0f}hPa', 188, 99, COLOR_BLACK)
 
     def clear(self):
         self._fb_black.fill(COLOR_WHITE)
         self._fb_red.fill(COLOR_WHITE)
         self.draw_buffer()
 
-    def update_values(self, pressure, humidity, temperature, gas, iaq):
+    def update_values(self, iaq, temperature, humidity, gas, pressure):
         self._fb_black.fill(COLOR_WHITE)
         self._fb_red.fill(COLOR_WHITE)
         self._write_labels()
 
-        if pressure is not None:
-            self._write_pressure(pressure)
-        if humidity is not None:
-            self._write_humidity(humidity)
+        if iaq is not None:
+            self._write_iaq(iaq)
         if temperature is not None:
             self._write_temperature(temperature)
+        if humidity is not None:
+            self._write_humidity(humidity)
         if gas is not None:
             self._write_gas(gas)
+        if pressure is not None:
+            self._write_pressure(pressure)
 
     def draw_buffer(self):
         self._epaper.display_frame(self._buf_black, self._buf_red)

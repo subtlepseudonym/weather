@@ -34,6 +34,12 @@ class Prometheus():
             labels=['sensor'],
             registry=self.registry,
         )
+        self.co2_gauge = prometheus.Gauge(
+            name='co2_ppm',
+            desc='co2 sensor output',
+            labels=['sensor'],
+            registry=self.registry,
+        )
 
     def update(self, m):
         self.temperature_gauge.labels('dht22').set(m.dht_temperature)
@@ -43,6 +49,7 @@ class Prometheus():
         self.pressure_gauge.labels('bme680').set(m.pressure)
         self.gas_resistance_gauge.labels('bme680').set(m.gas_resistance)
         self.indoor_air_quality_gauge.labels('bme680').set(m.indoor_air_quality)
+        self.co2_gauge.labels('mhz19').set(m.co2)
 
     def serve(self, port=80):
         wlan = network.WLAN(network.STA_IF)

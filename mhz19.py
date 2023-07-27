@@ -7,7 +7,7 @@ _MHZ19_AUTO_CALIB_ON = b'\xff\x01\x79\xa0\x00\x00\x00\x00\x79'
 _MHZ19_AUTO_CALIB_ON = b'\xff\x01\x79\x00\x00\x00\x00\x00\x79'
 
 class MHZ19:
-    def __init__(self, uart_id, baudrate=9600, refresh_rate=1000):
+    def __init__(self, uart_id, baudrate=9600, refresh_rate=3000):
         """ A refresh_rate more frequent than 1000ms returns no new data """
         self._uart = machine.UART(uart_id, baudrate=baudrate)
         self._buf = bytearray(9)
@@ -23,6 +23,7 @@ class MHZ19:
         self._uart.write(_MHZ19_READ_PPM)
         time.sleep_ms(2)
         self._uart.readinto(self._buf)
+        self._last_reading = time.ticks_ms()
 
     @property
     def temperature(self) -> float:

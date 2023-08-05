@@ -59,7 +59,7 @@ class Prometheus():
         self.router = prometheus.Router()
         self.router.register('GET', '/metrics', self.registry.handler)
         try:
-            self.server = prometheus.start_http_server(port, address=ip)
+            self.server = prometheus.start_http_server(port, address=ip, timeout=20.0)
         except OSError as err:
             if err.errno == 112:  # EADDRINUSE
                 print(err)
@@ -74,6 +74,7 @@ class Prometheus():
                 self.server.accept(self.router)
             except OSError as err:
                 if err.errno == 116:  # ETIMEDOUT
+                    print('request timeout: {}'.format(err))
                     continue
                 print('error accepting request: {}'.format(err))
             except ValueError as err:

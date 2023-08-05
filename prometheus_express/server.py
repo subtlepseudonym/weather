@@ -30,6 +30,7 @@ class Server():
 
     def accept(self, router):
         conn, addr = self.http_socket.accept()
+        print('request from {}'.format(addr))
 
         req = conn.recv(1024).decode(http_encoding)
         req_headers, req_body = self.parse_headers(req)

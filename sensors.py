@@ -1,22 +1,30 @@
 import _thread
 
 class Sensors():
-    def __init__(self, dht=None, bme=None, mhz=None):
+    def __init__(self, dht=None, bme=None, mhz=None, c8d=None):
         self.dht = dht
         self.bme = bme
         self.mhz = mhz
+        self.c8d = c8d
 
         self.dht_temperature = 0
         self.bme_temperature = 0
+        self.mhz_temperature = 0
         self._temperature_list = []
         self.temperature = 0  # mean sensor temp
+
         self.dht_humidity = 0
         self.bme_humidity = 0
         self._humidity_list = []
         self.humidity = 0  # mean sensor humidity
+
         self.pressure = 0
         self.gas_resistance = 0
         self.indoor_air_quality = 0
+
+        self.mhz_co2 = 0
+        self.c8d_co2 = 0
+        self._co2_list = []
         self.co2 = 0
 
     def update(self):
@@ -41,24 +49,34 @@ class Sensors():
 
         if self.mhz != None:
             self.mhz_temperature = self.mhz.temperature
-            self.co2 = self.mhz.co2
+            self.mhz_co2 = self.mhz.co2
 
             self._temperature_list.append(self.mhz_temperature)
+            self._co2_list.append(self.mhz_co2)
 
-        self.temperature = sum(self._temperature_list) / len(self._temperature_list)
-        self.humidity = sum(self._humidity_list) / len(self._humidity_list)
+        if self.c8d != None:
+            self.c8d_co2 = self.c8d.co2
+            self._co2_list.append(self.c8d_co2)
+
+        self.temperature = sum(self._temperature_list) / max(len(self._temperature_list), 1)
         self._temperature_list = []
+
+        self.humidity = sum(self._humidity_list) / max(len(self._humidity_list), 1)
         self._humidity_list = []
+
+        self.co2 = sum(self._co2_list) / max(len(self._co2_list), 1)
+        self._co2_list = []
 
     def print(self):
         print('--------')
-        print(f'dht temp:  {self.dht_temperature:6.1f} °C')
-        print(f'bme temp:  {self.bme_temperature:6.1f} °C')
-        print(f'mhz temp:  {self.mhz_temperature:6.1f} °C')
+        print(f'dht temp:  {self.dht_temperature:6.2f} °C')
+        print(f'bme temp:  {self.bme_temperature:6.2f} °C')
+        print(f'mhz temp:  {self.mhz_temperature:6.2f} °C')
         print(f'dht humid: {self.dht_humidity:6.1f} %rh')
         print(f'bme humid: {self.bme_humidity:6.1f} %rh')
         print(f'pressure:  {self.pressure:6.0f} hpa')
         print(f'gas res:   {self.gas_resistance:6.0f} ohm')
         print(f'iaq score: {self.indoor_air_quality:6.0f}')
-        print(f'co2 ppm:   {self.co2:6.0f} ppm')
+        print(f'mhz co2:   {self.mhz_co2:6.0f} ppm')
+        print(f'c8d co2:   {self.c8d_co2:6.0f} ppm')
         print('--------')

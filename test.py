@@ -1,5 +1,5 @@
 import consolas
-import epaper2in9b
+import wvsepd29b
 import framebuf
 from machine import Pin, SPI
 from writer import Writer
@@ -16,13 +16,13 @@ black = 0
 white = 1
 red = 1
 
-e = epaper2in9b.EPD(spi, cs, dc, rst, busy)
+e = wvsepd29b.EPD(spi, cs, dc, rst, busy)
 buf = bytearray(width * height // 8)
 
-e.set_rotate(epaper2in9b.ROTATE_270)
+e.set_rotate(wvsepd29b.ROTATE_270)
 #fb = framebuf.FrameBuffer(buf, height, width, framebuf.MONO_HLSB)  # portrait
 #fb = framebuf.FrameBuffer(buf, width, height, framebuf.MONO_VLSB)  # landscape
-display = epaper2in9b.TextDisplay(296, 128, buf)
+display = wvsepd29b.TextDisplay(296, 128, buf)
 w = Writer(display, consolas)
 Writer.set_textpos(display, 0, 0)
 

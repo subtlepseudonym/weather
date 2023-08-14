@@ -1,7 +1,7 @@
 from micropython import const
 from time import sleep_ms
-import framebuf
 import ustruct
+import display
 
 # Display resolution
 EPD_WIDTH  = const(128)
@@ -41,54 +41,27 @@ VCM_DC_SETTING_REGISTER        = const(0x82)
 #READ_OTP_DATA                  = const(0xA2)
 #POWER_SAVING                   = const(0xE3)
 
-# Display orientation
-ROTATE_0   = const(0)
-ROTATE_90  = const(1)
-ROTATE_180 = const(2)
-ROTATE_270 = const(3)
-
 BUSY = const(0)  # 0=busy, 1=idle
 
-# Reverse bit order in byte
-def _reverse_mask(b):
-    return (((b & 0x1)  << 7) | ((b & 0x2)  << 5) |
-            ((b & 0x4)  << 3) | ((b & 0x8)  << 1) |
-            ((b & 0x10) >> 1) | ((b & 0x20) >> 3) |
-            ((b & 0x40) >> 5) | ((b & 0x80) >> 7))
-
-
-class TextDisplay(framebuf.FrameBuffer):
-    def __init__(self, width, height, buffer):
-        self.width = width
-        self.height = height
-        self.buffer = buffer
-        self.mode = framebuf.MONO_VLSB
-        super().__init__(self.buffer, self.width, self.height, self.mode)
-
-
 class EPD:
-    def __init__(self, spi, pwr, cs, dc, rst, busy):
-        self.spi = spi
-        self.pwr = pwr
-        self.cs = cs
-        self.dc = dc
-        self.rst = rst
-        self.busy = busy
-        self.cs.init(self.cs.OUT, value=1)
-        self.dc.init(self.dc.OUT, value=0)
-        self.rst.init(self.rst.OUT, value=0)
-        self.busy.init(self.busy.IN)
+    def __init__(self, spi_id, pwr_pin, cs_pin, dc_pin, rst_pin, busy_pin)
+        self.spi = machine.SPI(spi_id, 20_000_000)
+        self.pwr = machine.Pin(pwr_pin, machine.Pin.OUT, machine.Pin.PULL_DOWN)
+        self.cs = machine.Pin(cs_pin, machine.Pin.OUT, value=1)
+        self.dc = machine.Pin(dc_pin, machine.Pin.OUT, value=0)
+        self.rst = machine.Pin(rst_pin, machine.Pin.OUT, value=0)
+        self.busy = machine.Pin(busy_pin, machine.Pin.IN)
         self.width = EPD_WIDTH
         self.height = EPD_HEIGHT
-        self.rotate = ROTATE_0
+        self.rotate = display.ROTATE_0
 
     def _command(self, command, data=None):
         self.dc.off()
         self.cs.off()
         self.spi.write(bytearray([command]))
-        self.cs.on()
         if data is not None:
             self._data(data)
+        self.cs.on()
 
     def _data(self, data):
         self.dc.on()
@@ -133,6 +106,7 @@ class EPD:
         sleep_ms(2000)
         self.pwr.off()
 
+    # display VLSB framebuf as VMSB
     def display_frame(self, frame_buffer_black, frame_buffer_red):
         if (frame_buffer_black != None):
             self._command(DATA_START_TRANSMISSION_1)
@@ -140,7 +114,7 @@ class EPD:
             for j in range(EPD_HEIGHT, 0, -1):
                 for i in range(0, EPD_WIDTH // 8):
                     idx = (i * EPD_HEIGHT) + (j-1)
-                    self._data(bytearray([_reverse_mask(frame_buffer_black[idx])]))
+                    self._data(bytearray([display._reverse_mask(frame_buffer_black[idx])]))
             sleep_ms(2)
         if (frame_buffer_red != None):
             self._command(DATA_START_TRANSMISSION_2)
@@ -148,7 +122,7 @@ class EPD:
             for j in range(EPD_HEIGHT, 0, -1):
                 for i in range(0, EPD_WIDTH // 8):
                     idx = (i * EPD_HEIGHT) + (j-1)
-                    self._data(bytearray([_reverse_mask(frame_buffer_red[idx])]))
+                    self._data(bytearray([display._reverse_mask(frame_buffer_red[idx])]))
             sleep_ms(2)
 
         self._command(DISPLAY_REFRESH)
@@ -172,38 +146,38 @@ class EPD:
         self.wait_until_idle()
 
     def set_rotate(self, rotate):
-        if (rotate == ROTATE_0):
-            self.rotate = ROTATE_0
+        if (rotate == display.ROTATE_0):
+            self.rotate = display.ROTATE_0
             self.width = EPD_WIDTH
             self.height = EPD_HEIGHT
-        elif (rotate == ROTATE_90):
-            self.rotate = ROTATE_90
+        elif (rotate == display.ROTATE_90):
+            self.rotate = display.ROTATE_90
             self.width = EPD_HEIGHT
             self.height = EPD_WIDTH
-        elif (rotate == ROTATE_180):
-            self.rotate = ROTATE_180
+        elif (rotate == display.ROTATE_180):
+            self.rotate = display.ROTATE_180
             self.width = EPD_WIDTH
             self.height = EPD_HEIGHT
-        elif (rotate == ROTATE_270):
-            self.rotate = ROTATE_270
+        elif (rotate == display.ROTATE_270):
+            self.rotate = display.ROTATE_270
             self.width = EPD_HEIGHT
             self.height = EPD_WIDTH
 
     def set_pixel(self, frame_buffer, x, y, color):
         if (x < 0 or x >= self.width or y < 0 or y >= self.height):
             return
-        if (self.rotate == ROTATE_0):
+        if (self.rotate == display.ROTATE_0):
             self.set_absolute_pixel(frame_buffer, x, y, color)
-        elif (self.rotate == ROTATE_90):
+        elif (self.rotate == display.ROTATE_90):
             point_temp = x
             x = EPD_WIDTH - y
             y = point_temp
             self.set_absolute_pixel(frame_buffer, x, y, color)
-        elif (self.rotate == ROTATE_180):
+        elif (self.rotate == display.ROTATE_180):
             x = EPD_WIDTH - x
             y = EPD_HEIGHT- y
             self.set_absolute_pixel(frame_buffer, x, y, color)
-        elif (self.rotate == ROTATE_270):
+        elif (self.rotate == display.ROTATE_270):
             point_temp = x
             x = y
             y = EPD_HEIGHT - point_temp

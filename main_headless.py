@@ -1,11 +1,11 @@
-import dht, machine
-import bme680, mhz19, prometheus, sensors
+import dht, machine, time
+import bme680, c8d, prometheus, sensors
 
 s = sensors.Sensors(
-    dht=dht.DHT22(machine.Pin(27)),
     bme=bme680.BME680(2, 5),
-    mhz=mhz19.MHZ19(2),
+    c8d=c8d.C8D(2),
 )
+time.sleep(2)
 s.update()
 
 # set up prometheus metrics

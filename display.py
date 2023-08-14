@@ -4,6 +4,7 @@ import framebuf
 import machine
 import writer
 
+# Width set assuming 270 degree rotation
 EPAPER_WIDTH = const(296)
 EPAPER_HEIGHT = const(128)
 
@@ -11,31 +12,47 @@ COLOR_BLACK = const(0)
 COLOR_WHITE = const(1)
 COLOR_RED = const(2)
 
+# Display orientation
+ROTATE_0   = const(0)
+ROTATE_90  = const(1)
+ROTATE_180 = const(2)
+ROTATE_270 = const(3)
+
+# Reverse bit order in byte
+def _reverse_mask(b):
+    return (((b & 0x1)  << 7) | ((b & 0x2)  << 5) |
+            ((b & 0x4)  << 3) | ((b & 0x8)  << 1) |
+            ((b & 0x10) >> 1) | ((b & 0x20) >> 3) |
+            ((b & 0x40) >> 5) | ((b & 0x80) >> 7))
+
+
+class TextDisplay(framebuf.FrameBuffer):
+    def __init__(self, width, height, buffer):
+        self.width = width
+        self.height = height
+        self.buffer = buffer
+        self.mode = framebuf.MONO_VLSB
+        super().__init__(self.buffer, self.width, self.height, self.mode)
+
+
 class Display():
-    def __init__(self, spi_id, pwr_pin, cs_pin, dc_pin, rst_pin, busy_pin):
-        # set up gpio pins
-        self._pwr = machine.Pin(pwr_pin, machine.Pin.OUT, machine.Pin.PULL_DOWN)
-        self._cs = machine.Pin(cs_pin, machine.Pin.OUT)
-        self._dc = machine.Pin(dc_pin, machine.Pin.OUT)
-        self._rst = machine.Pin(rst_pin, machine.Pin.OUT)
-        self._busy = machine.Pin(busy_pin, machine.Pin.IN)
+    def __init__(self, epd):
         # set up black display buffers
         self._buf_black = bytearray(EPAPER_WIDTH * EPAPER_HEIGHT // 8)
-        self._fb_black = epaper2in9b.TextDisplay(EPAPER_WIDTH, EPAPER_HEIGHT, self._buf_black)
+        self._fb_black = TextDisplay(EPAPER_WIDTH, EPAPER_HEIGHT, self._buf_black)
         self._fb_black.fill(COLOR_WHITE)
         self._writer_black = writer.Writer(self._fb_black, consolas)
         self._writer_black.set_textpos(self._fb_black, 0, 0)
         # set up red display buffers
         self._buf_red = bytearray(EPAPER_WIDTH * EPAPER_HEIGHT // 8)
-        self._fb_red = epaper2in9b.TextDisplay(EPAPER_WIDTH, EPAPER_HEIGHT, self._buf_red)
+        self._fb_red = TextDisplay(EPAPER_WIDTH, EPAPER_HEIGHT, self._buf_red)
         self._fb_red.fill(COLOR_WHITE)
         self._writer_red = writer.Writer(self._fb_red, consolas)
         self._writer_red.set_textpos(self._fb_red, 0, 0)
         # set up epaper device
-        spi = machine.SPI(spi_id, 20_000_000)
-        self._epaper = epaper2in9b.EPD(spi, self._pwr, self._cs, self._dc, self._rst, self._busy)
-        self._epaper.set_rotate(epaper2in9b.ROTATE_270)
-        self._epaper.init()
+        self._epd = epd
+        self._epd.set_rotate(ROTATE_270)
+        self._epd.init()
 
     def _write_text(self, text, x, y, color):
         if color == COLOR_BLACK:
@@ -105,10 +122,10 @@ class Display():
         self.sleep()
 
     def draw_buffer(self):
-        self._epaper.display_frame(self._buf_black, self._buf_red)
+        self._epd.display_frame(self._buf_black, self._buf_red)
 
     def sleep(self):
-        self._epaper.sleep()
+        self._epd.sleep()
 
     def wake(self):
-        self._epaper.init()
+        self._epd.init()

@@ -1,18 +1,21 @@
-import dht, machine
-import bme680, display, prometheus, sensors
+import dht, machine, time
+import bme680, c8d, display, prometheus, sensors, wasepd29
 
-d = dht.DHT22(machine.Pin(27))
-bme = bme680.BME680(2, 5)
-s = sensors.Sensors(d, bme)
+s = sensors.Sensors(
+    bme=bme680.BME680(2, 5),
+    c8d=c8d.C8D(2)
+)
+time.sleep(2)
 s.update()
 
 # set up prometheus metrics
 p = prometheus.Prometheus()
 p.update(s)
-p.serve()  # may call machine.reset on error
+p.serve()  # may call machine.reset on startup
 
 # set up e-ink display
-screen = display.Display(1, 26, 15, 2, 4, 12)
+epd = wasepd29.EPD(1, 2, 15, 27, 26, 12)
+screen = display.Display(epd)
 screen.update(s)
 
 PROMETHEUS_INTERVAL = 15000  # 15sec

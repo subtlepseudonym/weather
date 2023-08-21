@@ -1,4 +1,5 @@
 import machine
+import math
 import struct
 import time
 
@@ -76,7 +77,7 @@ _LOOKUP_TABLE_2 = (
 )
 
 class BME680:
-    def __init__(self, spi_id, cs_pin, refresh_rate: int = 100, debug: bool = False):
+    def __init__(self, spi_id, cs_pin, refresh_rate: int = 100, temp_offset: float = 0, debug: bool = False):
         self._spi = machine.SPI(spi_id, 100_000)
         self._cs = machine.Pin(cs_pin, machine.Pin.OUT)
 
@@ -92,6 +93,7 @@ class BME680:
         self._gas_range = None
         self._gas_reference = _IAQ_GAS_REFERENCE
         self._t_fine = None
+        self.set_temperature_offset(temp_offset)
 
         self._last_reading = 0
         self._min_refresh_time = refresh_rate
@@ -114,6 +116,16 @@ class BME680:
         # set up gas heater
         self._write(_BME680_BME680_RES_HEAT_0, [0x73])  # 320 degrees C
         self._write(_BME680_BME680_GAS_WAIT_0, [0x65])  # 148ms
+
+    def set_temperature_offset(self, value):
+        """Set temperature offset in degrees Celsius.
+        Original implementation: https://github.com/pimoroni/bme680-python/pull/13
+        Additional discussion:   https://github.com/pimoroni/bme680-python/issues/11
+        """
+        if value == 0:
+            self._t_fine_offset = 0
+        else:
+            self._t_fine_offset = int(math.copysign((((int(abs(value) * 100)) << 8) - 128) / 5, value))
 
     @property
     def temperature(self) -> float:
@@ -280,7 +292,7 @@ class BME680:
         var2 = (var1 * self._temp_calibration[1]) / 2048
         var3 = ((var1 / 2) * (var1 / 2)) / 4096
         var3 = (var3 * self._temp_calibration[2] * 16) / 16384
-        self._t_fine = int(var2 + var3)
+        self._t_fine = int(var2 + var3) + self._t_fine_offset
 
     def _read_calibration(self) -> None:
         """Read & save the calibration coefficients"""

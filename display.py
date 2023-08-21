@@ -87,7 +87,7 @@ class Display():
             color = COLOR_RED
         temp_f = int(temperature * 9 / 5 + 32)
         self._write_text(f'{temperature: >5.0f}C {temp_f:.0f}F', 0, 63, color)
-        self._write_text(f'     /', 0, 63, COLOR_BLACK)  # always draw slash with black
+        self._write_text(f'/', 72, 63, COLOR_BLACK)  # always draw slash with black
 
     def _write_humidity(self, humidity):
         color = COLOR_BLACK

@@ -77,7 +77,7 @@ _LOOKUP_TABLE_2 = (
 )
 
 class BME680:
-    def __init__(self, spi_id, cs_pin, refresh_rate: int = 100, temp_offset: float = 0, debug: bool = False):
+    def __init__(self, spi_id, cs_pin, refresh_rate: int = 100, temp_offset: float = 0, humidity_offset: float = 0, debug: bool = False):
         self._spi = machine.SPI(spi_id, 100_000)
         self._cs = machine.Pin(cs_pin, machine.Pin.OUT)
 
@@ -94,6 +94,7 @@ class BME680:
         self._gas_reference = _IAQ_GAS_REFERENCE
         self._t_fine = None
         self.set_temperature_offset(temp_offset)
+        self._humidity_offset = humidity_offset
 
         self._last_reading = 0
         self._min_refresh_time = refresh_rate
@@ -196,7 +197,7 @@ class BME680:
 
         calc_hum = min(calc_hum, 100)
         calc_hum = max(calc_hum, 0)
-        return calc_hum
+        return calc_hum + self._humidity_offset
 
     @property
     def gas_resistance(self) -> int:

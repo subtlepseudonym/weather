@@ -1,15 +1,17 @@
 import _thread
 
 class Sensors():
-    def __init__(self, dht=None, bme=None, mhz=None, c8d=None):
+    def __init__(self, dht=None, bme=None, mhz=None, c8d=None, epd=None):
         self.dht = dht
         self.bme = bme
         self.mhz = mhz
         self.c8d = c8d
+        self.epd = epd
 
         self.dht_temperature = 0
         self.bme_temperature = 0
         self.mhz_temperature = 0
+        self.epd_temperature = 0
         self._temperature_list = []
         self.temperature = 0  # mean sensor temp
 
@@ -58,6 +60,10 @@ class Sensors():
             self.c8d_co2 = self.c8d.co2
             self._co2_list.append(self.c8d_co2)
 
+        if self.epd != None:
+            self.epd_temperature = self.epd.temperature
+            self._temperature_list.append(self.epd_temperature)
+
         self.temperature = sum(self._temperature_list) / max(len(self._temperature_list), 1)
         self._temperature_list = []
 
@@ -72,9 +78,10 @@ class Sensors():
         print(f'dht temp:  {self.dht_temperature:6.2f} °C')
         print(f'bme temp:  {self.bme_temperature:6.2f} °C')
         print(f'mhz temp:  {self.mhz_temperature:6.2f} °C')
+        print(f'epd temp:  {self.epd_temperature:6.2f} °C')
         print(f'dht humid: {self.dht_humidity:6.1f} %rh')
         print(f'bme humid: {self.bme_humidity:6.1f} %rh')
-        print(f'pressure:  {self.pressure:6.0f} hpa')
+        print(f'pressure:  {self.pressure:7.2f} hpa')
         print(f'gas res:   {self.gas_resistance:6.0f} ohm')
         print(f'iaq score: {self.indoor_air_quality:6.0f}')
         print(f'mhz co2:   {self.mhz_co2:6.0f} ppm')

@@ -23,7 +23,7 @@ SW_RESET                = const(0x12)
 #VCI_DETECTION           = const(0x15)
 TEMP_SENSOR_CONTROL     = const(0x18)  # set read internal/external temp
 #WRITE_TEMPERATURE       = const(0x1A)  # write temperature register
-#READ_TEMPERATURE        = const(0x1B)  # read temperature register
+READ_TEMPERATURE        = const(0x1B)  # read temperature register
 #EXT_TEMP_SENSOR_CMD     = const(0x1C)  # send command to external temp sensor
 MASTER_ACTIVATION       = const(0x20)  # display update
 DISPLAY_UPDATE_CONTROL1 = const(0x21)  # display update ram options
@@ -96,7 +96,7 @@ class EPD:
         self._command(SET_RAMX_ADDRESS, b'\x00\x0F')  # (0x0f + 1) * 8 = 128
         self._command(SET_RAMY_ADDRESS, b'\x27\x01\x00\x00')  # (0x127 + 1) = 296
         self._command(BORDER_WAVEFORM, b'\x05')
-        self._command(TEMP_SENSOR_CONTROL, b'\x80')  # \x80 external temp, \x48 internal temp
+        self._command(TEMP_SENSOR_CONTROL, b'\x80')  # \x48 external temp, \x80 internal temp
         self._command(DISPLAY_UPDATE_CONTROL1, b'\x80\x80')  # normal BW, invert RED, source s8-s167
         self._reset_write_head()
         self.wait_until_idle()
@@ -224,3 +224,10 @@ class EPD:
             self.rotate = display.ROTATE_270
             self.width = EPD_HEIGHT
             self.height = EPD_WIDTH
+
+    @property
+    def temperature(self) -> float:
+        self._command(READ_TEMPERATURE)
+        buf = bytearray(12)
+        self.spi.readinto(buf)
+        return int.from_bytes(buf, "big")

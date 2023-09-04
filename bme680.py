@@ -77,7 +77,7 @@ _LOOKUP_TABLE_2 = (
 )
 
 class BME680:
-    def __init__(self, spi_id, cs_pin, refresh_rate: int = 100, temp_offset: float = 0, humidity_offset: float = 0, debug: bool = False):
+    def __init__(self, spi_id, cs_pin, refresh_rate: int = 100, t_fine_offset: float = 0, temp_offset: float = 0, humidity_offset: float = 0, debug: bool = False):
         self._spi = machine.SPI(spi_id, 100_000)
         self._cs = machine.Pin(cs_pin, machine.Pin.OUT)
 
@@ -93,7 +93,8 @@ class BME680:
         self._gas_range = None
         self._gas_reference = _IAQ_GAS_REFERENCE
         self._t_fine = None
-        self.set_temperature_offset(temp_offset)
+        self.set_temperature_offset(t_fine_offset)
+        self._temp_offset = temp_offset
         self._humidity_offset = humidity_offset
 
         self._last_reading = 0
@@ -133,7 +134,7 @@ class BME680:
         """The compensated temperature in degrees Celsius."""
         self._perform_reading()
         calc_temp = ((self._t_fine * 5) + 128) / 256
-        return calc_temp / 100
+        return (calc_temp / 100) + self._temp_offset
 
     @property
     def pressure(self) -> float:

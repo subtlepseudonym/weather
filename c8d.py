@@ -39,6 +39,8 @@ class C8D:
         time.sleep_ms(2)
         self._uart.readinto(self._buf)
         self._last_reading = time.ticks_ms()
+        if self._buf[0] != b'\x64' or self._buf[1] != b'\x69':
+            self._uart.readinto(bytearray(64))
 
     @property
     def co2(self) -> float:
